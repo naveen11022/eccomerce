@@ -1,15 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.database import get_db_dependency
 from models.product import Product
 from schemas.cart import CartItemOut
 from config.redis_config import config
 from utils.token import get_current_user
+from config.rate_limiting import limiter
 
 router = APIRouter(prefix="/cart", tags=["Cart"])
 
 
 @router.post("/add")
+@limiter.limit("10/minute")
 def add_to_cart(
     data: CartItemOut,
     db: Session = Depends(get_db_dependency),
@@ -31,6 +33,7 @@ def add_to_cart(
 
 
 @router.get("/")
+@limiter.limit("10/minute")
 def get_cart(
     db: Session = Depends(get_db_dependency),
     user = Depends(get_current_user)
@@ -76,6 +79,7 @@ def get_cart(
 
 
 @router.delete("/remove/{product_id}")
+@limiter.limit("10/minute")
 def remove_from_cart(
     product_id: int,
     user = Depends(get_current_user)
@@ -87,6 +91,7 @@ def remove_from_cart(
 
 
 @router.delete("/clear")
+@limiter.limit("10/minute")
 def clear_cart(user = Depends(get_current_user)):
     config.delete(f"cart:{user.id}")
     return {"message": "Cart cleared"}

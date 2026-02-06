@@ -7,12 +7,15 @@ from models.order import Order
 from models.order import OrderItem
 from utils.token import get_current_user
 from config.celery_app import send_order_email
+from config.rate_limiting import limiter
+
 import json
 
 router = APIRouter(prefix="/order", tags=["Order"])
 
 
 @router.post("/place", status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minutes")
 def place_order(
     db: Session = Depends(get_db_dependency),
     user = Depends(get_current_user),

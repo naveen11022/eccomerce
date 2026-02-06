@@ -9,12 +9,15 @@ from utils.email import send_otp_email
 from utils.generate_otp import generate_otp
 from datetime import timedelta
 from utils.token import create_access_token
+from config.rate_limiting import limiter
+
 import uuid
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @router.post("/user_exists", tags=["Auth"])
+@limiter.limit("5/minute")
 def user_exists(
     client: UserVerify,
     background_tasks: BackgroundTasks,
@@ -42,6 +45,7 @@ def user_exists(
 
 
 @router.post("/verify-otp", tags=["Auth"])
+@limiter.limit("5/minute")
 def verify_otp(data: OTPVerify):
     key = data.email
     stored_otp = config.get(key)
@@ -65,6 +69,7 @@ def verify_otp(data: OTPVerify):
 
 
 @router.post("/signup", tags=["Auth"])
+@limiter.limit("5/minute")
 def signup(
     data: UserSignup,
     verification_token: str,
@@ -94,6 +99,7 @@ def signup(
 
 
 @router.post("/login", tags=["Auth"])
+@limiter.limit("5/minute")
 def login(data: UserLogin, db: Session = Depends(get_db_dependency)):
     user = db.query(User).filter(User.email == data.email).first()
 
